@@ -1,7 +1,7 @@
 AC_PREREQ(2.60)
 AC_INIT()
 
-AM_INIT_AUTOMAKE(bluez, 4.41)
+AM_INIT_AUTOMAKE(bluez, 4.40)
 AM_CONFIG_HEADER(config.h)
 
 AM_MAINTAINER_MODE
@@ -63,5 +63,6 @@ AC_OUTPUT([
 	test/Makefile
 	doc/Makefile
 	doc/version.xml
+	dmtx/Makefile
 	bluez.pc
 ])
