@@ -1,0 +1,78 @@
+BlueZ D-Bus Dmtx API description
+***********************************
+
+Part of Bluez-GSoC 2009 Program
+Student: M Omar Faruque Sarker <writefaruq@gmail.com>
+Mentor: Claudio Takahasi <claudio.takahasi@gmail.com>
+
+
+Device hierarchy
+=================
+
+Service		org.bluez
+Interface	org.bluez.Dmtx
+Object path	[variable prefix]/{hci0,hci1,...}/dev_XX_XX_XX_XX_XX_XX
+
+Methods		unit32 CreateOOBDevice(string xml_oob_data)
+
+			Creates a new object path for a out of band (OOB) remote device from xml
+			data (bdaddr, hash c and randomizer r) without actually connecting to the remote device and retrieving
+			any SDP record. This returns a connection handle for the specified device.
+
+			If the object for the remote device already exists
+			this method will fail.
+
+			Possible errors: org.bluez.Error.InvalidArguments
+					 org.bluez.Error.Failed
+
+            object RemoveOOBDevice(string bdaddr)
+
+			This removes the OOB remote device object at the given
+			path if the device is not connected yet.
+
+			Possible errors: org.bluez.Error.InvalidArguments
+					 org.bluez.Error.Failed
+
+            void ConnectOOBDevice(unit32 connection_handle)
+
+			Connect to the remote device with specified handle. If remote device is not paried yet, this
+			will also initiate pairing in OOB way. This will require the caller to play the role of a
+			proxy OBB device, if the remote device has no OOB support. Particularly for exchanges
+			I/O capabilities and performing authentication either in read/write or read-only passive mode.
+
+
+			Possible errors: org.bluez.Error.AlreadyConnected
+					 org.bluez.Error.ConnectionAttemptFailed
+
+            void Disconnect()
+
+			Disconnect from the remote device and remove it  from the
+			list of OOB devices.
+
+			To abort a connection attempt in case of errors or
+			timeouts in the client it is fine to call this method.
+
+			Possible errors: org.bluez.Error.Failed
+
+		dict GetProperties()
+
+			Returns all properties for the interface. See the
+			properties section for available properties.
+
+			Possible Errors: org.bluez.Error.InvalidArguments
+
+
+
+Signals	    PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+
+Properties boolean Connected [readonly]
+
+			Indicates if the remote device is currently connected.
+			From this point, the device should be treated as "real" rather
+			than just a symbolic one.
+			A PropertyChanged signal indicate changes to this
+			status.
