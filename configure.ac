@@ -68,7 +68,11 @@ AC_OUTPUT([
 	scripts/bluetooth.rules
 	doc/Makefile
 	doc/version.xml
+<<<<<<< HEAD:configure.ac
 	src/bluetoothd.8
 	src/hcid.conf.5
+=======
+	dmtx/Makefile
+>>>>>>> Dmtx all patch applied:configure.ac
 	bluez.pc
 ])
