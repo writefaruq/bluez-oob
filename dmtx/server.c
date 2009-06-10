@@ -39,7 +39,7 @@
 #include "glib-helper.h"
 #include "btio.h"
 #include "adapter.h"
-//#include "device.h"
+#include "oob-device.h"
 #include "server.h"
 
 static GSList *servers = NULL;
@@ -62,12 +62,21 @@ static gint server_cmp(gconstpointer s, gconstpointer user_data)
 int server_start(const bdaddr_t *src)
 {
 	struct dmtx_server *server;
-	//GError *err = NULL;
+	/* GError *err = NULL; */
+
+        struct oob_data *loob_data; /* local oob data*/
 
 	server = g_new0(struct dmtx_server, 1);
 	bacpy(&server->src, src);
 
 	servers = g_slist_append(servers, server);
+
+	/* Initialize local OOB data */
+        loob_data = g_new0(struct oob_data, 1);
+        bacpy(&loob_data->bdaddr, src);
+        get_local_oobdata(loob_data);
+
+        /*Export oob-device D-Bus APIs */
 
 	return 0;
 }
