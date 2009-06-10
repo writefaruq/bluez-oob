@@ -81,4 +81,7 @@ static void get_local_oobdata(struct oob_data* oob_data)
 	}
 }
 
+static void register_oob_device_interface(DBusConnection *conn, const gchar *path, struct oob_data* oob_data)
+{
 
+}

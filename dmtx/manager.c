@@ -49,10 +49,13 @@ static DBusConnection *connection = NULL;
 static int dmtx_server_probe(struct btd_adapter *adapter)
 {
 	bdaddr_t src;
+	const gchar *path;
 
 	adapter_get_address(adapter, &src);
 
-	return server_start(&src);
+        path = adapter_get_path(adapter);
+
+	return server_start(&src, path, connection);
 }
 
 static void dmtx_server_remove(struct btd_adapter *adapter)
