@@ -81,7 +81,64 @@ static void get_local_oobdata(struct oob_data* oob_data)
 	}
 }
 
-static void register_oob_device_interface(DBusConnection *conn, const gchar *path, struct oob_data* oob_data)
+static void oob_unregister(void *data)
 {
+	struct oob_data *loob_data = data;
+
+	debug("Unregistered interface %s", DMTX_DEVICE_INTERFACE);
+	/* TODO */
+}
+
+static DBusMessage *create_oob_device(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+        struct oob_data *roob_data = data;
+        struct btd_adapter *adapter;
+	struct btd_device *device;
+	const gchar *address;
+
+        /* TODO: parse supplied xml content
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &address,
+						DBUS_TYPE_INVALID) == FALSE)
+		return invalid_args(msg);
+        */
+
+	if (check_address(address) < 0)
+		return invalid_args(msg);
+
+	if (adapter_find_device(adapter, address))
+		return g_dbus_create_error(msg,
+				ERROR_INTERFACE ".AlreadyExists",
+				"Device already exists");
+
+	debug("create_device(%s)", address);
+
+	device = adapter_create_device(conn, adapter, address);
+	if (!device)
+		return NULL;
+
+	return NULL;
+}
+
+static GDBusMethodTable oob_methods[] = {
+	{ "CreateOOBDevice",		"a{sv}",	"u",	create_oob_device,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ }
+};
+
+static void register_oob_interface(DBusConnection *conn, const gchar *path, struct oob_data* oob_data)
+{
+        if (g_dbus_register_interface(conn, path, DMTX_DEVICE_INTERFACE,
+					oob_methods, NULL, NULL,
+					oob_data, oob_unregister) == FALSE) {
+		error("Failed to register interface %s on path %s",
+			DMTX_DEVICE_INTERFACE, path);
+		return NULL;
+	}
+
+	debug("Registered interface %s on path %s",
+			DMTX_DEVICE_INTERFACE, path);
 
 }
+
+

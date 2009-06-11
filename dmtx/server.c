@@ -77,7 +77,7 @@ int server_start(const bdaddr_t *src, const gchar *path, DBusConnection *conn)
         get_local_oobdata(loob_data);
 
         /*Export oob-device specific D-Bus APIs */
-        register_oob_device_interface(conn, path, loob_data);
+        register_oob_interface(conn, path, loob_data);
 
 	return 0;
 }

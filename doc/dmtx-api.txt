@@ -44,7 +44,7 @@ Methods		unit32 CreateOOBDevice(string xml_oob_data)
 			Possible errors: org.bluez.Error.AlreadyConnected
 					 org.bluez.Error.ConnectionAttemptFailed
 
-            void Disconnect()
+            void DisconnectOOBDevice()
 
 			Disconnect from the remote device and remove it  from the
 			list of OOB devices.
