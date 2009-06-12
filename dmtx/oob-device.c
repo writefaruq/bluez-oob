@@ -89,19 +89,27 @@ static void oob_unregister(void *data)
 	/* TODO */
 }
 
-static DBusMessage *create_oob_device(DBusConnection *conn,
-					DBusMessage *msg, void *data)
+static inline DBusMessage *invalid_args(DBusMessage *msg)
 {
-        struct oob_data *roob_data = data;
-        struct btd_adapter *adapter;
-	struct btd_device *device;
-	const gchar *address;
+	return g_dbus_create_error(msg, ERROR_INTERFACE ".InvalidArguments",
+			"Invalid arguments in method call");
+}
 
-        /* TODO: parse supplied xml content
-	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &address,
-						DBUS_TYPE_INVALID) == FALSE)
-		return invalid_args(msg);
-        */
+int add_oob_device(DBusConnection *conn, const char *sender,
+                        struct btd_adapter *adapter, const char *xmltext,
+                        dbus_uint32_t *handle)
+{
+        struct oob_data *roob_data;
+        char gchar *address;
+        struct btd_device *device;
+
+ 	roob_data = dmtx_xml_parse_oob(xmltext, strlen(xmltext));
+	if (!roob_data) {
+		error("Parsing of XML OOB data failed");
+		return -EIO;
+	}
+
+        ba2str(&roob_data->bdaddr, address);
 
 	if (check_address(address) < 0)
 		return invalid_args(msg);
@@ -115,22 +123,54 @@ static DBusMessage *create_oob_device(DBusConnection *conn,
 
 	device = adapter_create_device(conn, adapter, address);
 	if (!device)
+		return errno;
+
+        return handle;
+}
+
+static DBusMessage *create_oob_device(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+        struct btd_adapter *adapter = data;
+        DBusMessage *reply;
+	const char *sender, *xmltext;
+	dbus_uint32_t handle;
+	int err;
+
+	if (dbus_message_get_args(msg, NULL,
+			DBUS_TYPE_STRING, &xmltext, DBUS_TYPE_INVALID) == FALSE)
+		return invalid_args(msg);
+
+	sender = dbus_message_get_sender(msg);
+
+	err = add_oob_device(conn, sender, adapter, xmltext, &handle);
+	if (err < 0)
+		return failed_strerror(msg, err);
+
+	reply = dbus_message_new_method_return(msg);
+	if (!reply)
 		return NULL;
 
-	return NULL;
+	dbus_message_append_args(reply, DBUS_TYPE_UINT32, &handle,
+							DBUS_TYPE_INVALID);
+
+	return reply;
 }
 
 static GDBusMethodTable oob_methods[] = {
-	{ "CreateOOBDevice",		"a{sv}",	"u",	create_oob_device,
+	{ "CreateOOBDevice",		"s",	"u",	create_oob_device,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
-static void register_oob_interface(DBusConnection *conn, const gchar *path, struct oob_data* oob_data)
+static void register_oob_interface(DBusConnection *conn, struct btd_adapter *adapter, struct oob_data* oob_data)
 {
+        const gchar *path;
+        path = adapter_get_path(adapter);
+
         if (g_dbus_register_interface(conn, path, DMTX_DEVICE_INTERFACE,
 					oob_methods, NULL, NULL,
-					oob_data, oob_unregister) == FALSE) {
+					adapter, oob_unregister) == FALSE) {
 		error("Failed to register interface %s on path %s",
 			DMTX_DEVICE_INTERFACE, path);
 		return NULL;
