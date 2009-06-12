@@ -21,5 +21,5 @@
  *
  */
 
-int server_start(const bdaddr_t *src, const gchar *path, DBusConnection *conn);
+int server_start(struct btd_adapter *adapter, DBusConnection *conn);
 void server_stop(const bdaddr_t *src);

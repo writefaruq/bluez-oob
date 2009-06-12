@@ -59,12 +59,15 @@ static gint server_cmp(gconstpointer s, gconstpointer user_data)
 }
 
 
-int server_start(const bdaddr_t *src, const gchar *path, DBusConnection *conn)
+int server_start(struct btd_adapter *adapter, DBusConnection *conn)
 {
 	struct dmtx_server *server;
-	/* GError *err = NULL; */
-
+        bdaddr_t src;
+	const gchar *path;
         struct oob_data *loob_data; /* local oob data*/
+
+	adapter_get_address(adapter, &src);
+        path = adapter_get_path(adapter);
 
 	server = g_new0(struct dmtx_server, 1);
 	bacpy(&server->src, src);
@@ -77,7 +80,7 @@ int server_start(const bdaddr_t *src, const gchar *path, DBusConnection *conn)
         get_local_oobdata(loob_data);
 
         /*Export oob-device specific D-Bus APIs */
-        register_oob_interface(conn, path, loob_data);
+        register_oob_interface(conn, adapter, loob_data);
 
 	return 0;
 }
