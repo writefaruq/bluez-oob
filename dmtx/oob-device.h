@@ -21,5 +21,11 @@
  *
  */
 
-static void get_local_oobdata(struct oob_data* oob_data);
-static void register_oob_device_interface(DBusConnection *conn, const gchar *path, struct oob_data* oob_data);
+struct oob_data {
+        bdaddr_t        bdaddr;
+        uint8_t         hash[16];
+        uint8_t         randomizer[16];
+};
+
+void get_local_oobdata(struct oob_data *oob_data);
+void register_oob_interface(DBusConnection *conn, struct btd_adapter *adapter, struct oob_data* oob_data);

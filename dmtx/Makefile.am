@@ -5,7 +5,7 @@ plugindir = $(libdir)/bluetooth/plugins
 plugin_LTLIBRARIES = dmtx.la
 
 dmtx_la_SOURCES = main.c manager.h manager.c \
-			server.h server.c device.h device.c
+			server.h server.c oob-device.h oob-device.c
 
 LDADD = $(top_builddir)/common/libhelper.a \
 		@GDBUS_LIBS@ @GLIB_LIBS@ @DBUS_LIBS@ @BLUEZ_LIBS@

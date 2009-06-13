@@ -1,0 +1,33 @@
+#!/usr/bin/python
+
+import sys
+import time
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object("org.bluez", "/"),
+						"org.bluez.Manager")
+
+adapter = dbus.Interface(bus.get_object("org.bluez", manager.DefaultAdapter()),
+							"org.bluez.Adapter")
+
+if (len(sys.argv) < 2):
+	print "Usage: %s <address> " % (sys.argv[0])
+	sys.exit(1)
+
+address = sys.argv[1]
+
+path = manager.DefaultAdapter()
+
+dmtx = dbus.Interface(bus.get_object("org.bluez", path),
+						"org.bluez.Dmtx")
+
+device = dmtx.CreateOOBDevice(address)
+
+print "Created device %s with address: %s" % (device, address)
+
+print device
+sys.exit(0)
+
+
