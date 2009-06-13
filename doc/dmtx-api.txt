@@ -13,11 +13,11 @@ Service		org.bluez
 Interface	org.bluez.Dmtx
 Object path	[variable prefix]/{hci0,hci1,...}/dev_XX_XX_XX_XX_XX_XX
 
-Methods		unit32 CreateOOBDevice(string xml_oob_data)
+Methods		object CreateOOBDevice(string address)
 
-			Creates a new object path for a out of band (OOB) remote device from xml
-			data (bdaddr, hash c and randomizer r) without actually connecting to the remote device and retrieving
-			any SDP record. This returns a connection handle for the specified device.
+			Creates a new object path for a out of band (OOB) remote device from bdaddr
+                        without actually retrieving any SDP record from it.
+			This returns the specified device object.
 
 			If the object for the remote device already exists
 			this method will fail.
