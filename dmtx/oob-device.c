@@ -94,7 +94,7 @@ static inline DBusMessage *invalid_args(DBusMessage *msg)
 	return g_dbus_create_error(msg, ERROR_INTERFACE ".InvalidArguments",
 			"Invalid arguments in method call");
 }
-
+/*
 int add_oob_device(DBusConnection *conn, const char *sender,
                         struct btd_adapter *adapter, const char *xmltext,
                         dbus_uint32_t *handle)
@@ -124,7 +124,7 @@ int add_oob_device(DBusConnection *conn, const char *sender,
 	device = adapter_create_device(conn, adapter, address);
 	if (!device)
 		return errno;
-
+        handle = device->handle;
         return handle;
 }
 
@@ -156,9 +156,38 @@ static DBusMessage *create_oob_device(DBusConnection *conn,
 
 	return reply;
 }
+*/
+
+static DBusMessage *create_device2(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct btd_adapter *adapter = data;
+	struct btd_device *device;
+	const gchar *address;
+
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &address,
+						DBUS_TYPE_INVALID) == FALSE)
+		return invalid_args(msg);
+
+	if (check_address(address) < 0)
+		return invalid_args(msg);
+
+	if (adapter_find_device(adapter, address))
+		return g_dbus_create_error(msg,
+				ERROR_INTERFACE ".AlreadyExists",
+				"Device already exists");
+
+	debug("create_device(%s)", address);
+
+	device = adapter_create_device(conn, adapter, address);
+	if (!device)
+		return NULL;
+
+	return NULL;
+}
 
 static GDBusMethodTable oob_methods[] = {
-	{ "CreateOOBDevice",		"s",	"u",	create_oob_device,
+	{ "CreateOOBDevice",		"s",	"o",	create_device2,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
