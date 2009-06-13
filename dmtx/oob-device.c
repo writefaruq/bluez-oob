@@ -45,30 +45,35 @@
 #include <dbus/dbus.h>
 #include <gdbus.h>
 
+#include "logging.h"
+#include "textfile.h"
+#include "uinput.h"
+
 #include "../src/storage.h"
 #include "../src/manager.h"
 #include "../src/dbus-common.h"
 #include "adapter.h"
 #include "../src/device.h"
 
-#include "oob-device.h"
+
 #include "error.h"
 #include "glib-helper.h"
+#include "btio.h"
+
+#include "oob-device.h"
+
+#define check_address(address) bachk(address)
 
 #define DMTX_DEVICE_INTERFACE "org.bluez.Dmtx"
 
-struct oob_data {
-        bdaddr_t        bdaddr;
-        uint8_t         hash[16];
-        uint8_t         randomizer[16];
-};
+struct oob_data;
 
-static void get_local_oobdata(struct oob_data* oob_data)
+void get_local_oobdata(struct oob_data *oob_data)
 {
         int dev_id, dd, i;
         int timeout = 1000;
 
-        dev_id = hci_get_route(&oob_data->bd_addr);
+        dev_id = hci_get_route(&oob_data->bdaddr);
         dd = hci_open_dev(dev_id);
 	if (dd < 0) {
 		fprintf(stderr, "Can't open device hci%d: %s (%d)\n",
@@ -192,7 +197,7 @@ static GDBusMethodTable oob_methods[] = {
 	{ }
 };
 
-static void register_oob_interface(DBusConnection *conn, struct btd_adapter *adapter, struct oob_data* oob_data)
+void register_oob_interface(DBusConnection *conn, struct btd_adapter *adapter, struct oob_data* oob_data)
 {
         const gchar *path;
         path = adapter_get_path(adapter);
@@ -202,7 +207,6 @@ static void register_oob_interface(DBusConnection *conn, struct btd_adapter *ada
 					adapter, oob_unregister) == FALSE) {
 		error("Failed to register interface %s on path %s",
 			DMTX_DEVICE_INTERFACE, path);
-		return NULL;
 	}
 
 	debug("Registered interface %s on path %s",

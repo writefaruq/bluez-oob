@@ -50,6 +50,8 @@ struct dmtx_server {
 	GIOChannel *confirm;
 };
 
+struct oob_data;
+
 static gint server_cmp(gconstpointer s, gconstpointer user_data)
 {
 	const struct dmtx_server *server = s;
@@ -70,13 +72,13 @@ int server_start(struct btd_adapter *adapter, DBusConnection *conn)
         path = adapter_get_path(adapter);
 
 	server = g_new0(struct dmtx_server, 1);
-	bacpy(&server->src, src);
+	bacpy(&server->src, &src);
 
 	servers = g_slist_append(servers, server);
 
 	/* Initialize local OOB data */
         loob_data = g_new0(struct oob_data, 1);
-        bacpy(&loob_data->bdaddr, src);
+        bacpy(&loob_data->bdaddr, &src);
         get_local_oobdata(loob_data);
 
         /*Export oob-device specific D-Bus APIs */
