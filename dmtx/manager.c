@@ -45,7 +45,6 @@ static int idle_timeout = 0;
 
 static DBusConnection *connection = NULL;
 
-
 static int dmtx_server_probe(struct btd_adapter *adapter)
 {
 
@@ -60,8 +59,6 @@ static void dmtx_server_remove(struct btd_adapter *adapter)
 
 	server_stop(&src);
 }
-
-
 
 static struct btd_adapter_driver dmtx_server_driver = {
 	.name   = "dmtx-server",
