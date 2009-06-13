@@ -55,7 +55,6 @@
 #include "adapter.h"
 #include "../src/device.h"
 
-
 #include "error.h"
 #include "glib-helper.h"
 #include "btio.h"
@@ -99,71 +98,8 @@ static inline DBusMessage *invalid_args(DBusMessage *msg)
 	return g_dbus_create_error(msg, ERROR_INTERFACE ".InvalidArguments",
 			"Invalid arguments in method call");
 }
-/*
-int add_oob_device(DBusConnection *conn, const char *sender,
-                        struct btd_adapter *adapter, const char *xmltext,
-                        dbus_uint32_t *handle)
-{
-        struct oob_data *roob_data;
-        char gchar *address;
-        struct btd_device *device;
-
- 	roob_data = dmtx_xml_parse_oob(xmltext, strlen(xmltext));
-	if (!roob_data) {
-		error("Parsing of XML OOB data failed");
-		return -EIO;
-	}
-
-        ba2str(&roob_data->bdaddr, address);
-
-	if (check_address(address) < 0)
-		return invalid_args(msg);
-
-	if (adapter_find_device(adapter, address))
-		return g_dbus_create_error(msg,
-				ERROR_INTERFACE ".AlreadyExists",
-				"Device already exists");
-
-	debug("create_device(%s)", address);
-
-	device = adapter_create_device(conn, adapter, address);
-	if (!device)
-		return errno;
-        handle = device->handle;
-        return handle;
-}
 
 static DBusMessage *create_oob_device(DBusConnection *conn,
-					DBusMessage *msg, void *data)
-{
-        struct btd_adapter *adapter = data;
-        DBusMessage *reply;
-	const char *sender, *xmltext;
-	dbus_uint32_t handle;
-	int err;
-
-	if (dbus_message_get_args(msg, NULL,
-			DBUS_TYPE_STRING, &xmltext, DBUS_TYPE_INVALID) == FALSE)
-		return invalid_args(msg);
-
-	sender = dbus_message_get_sender(msg);
-
-	err = add_oob_device(conn, sender, adapter, xmltext, &handle);
-	if (err < 0)
-		return failed_strerror(msg, err);
-
-	reply = dbus_message_new_method_return(msg);
-	if (!reply)
-		return NULL;
-
-	dbus_message_append_args(reply, DBUS_TYPE_UINT32, &handle,
-							DBUS_TYPE_INVALID);
-
-	return reply;
-}
-*/
-
-static DBusMessage *create_device2(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct btd_adapter *adapter = data;
@@ -192,7 +128,7 @@ static DBusMessage *create_device2(DBusConnection *conn,
 }
 
 static GDBusMethodTable oob_methods[] = {
-	{ "CreateOOBDevice",		"s",	"o",	create_device2,
+	{ "CreateOOBDevice",		"s",	"o",	create_oob_device,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
@@ -213,5 +149,3 @@ void register_oob_interface(DBusConnection *conn, struct btd_adapter *adapter, s
 			DMTX_DEVICE_INTERFACE, path);
 
 }
-
-
