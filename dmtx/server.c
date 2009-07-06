@@ -27,15 +27,12 @@
 
 #include <unistd.h>
 #include <errno.h>
-
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/sdp.h>
-
 #include <glib.h>
 #include <dbus/dbus.h>
 
 #include "logging.h"
-
 #include "glib-helper.h"
 #include "btio.h"
 #include "adapter.h"

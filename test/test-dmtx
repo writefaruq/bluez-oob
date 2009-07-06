@@ -27,7 +27,7 @@ device = dmtx.CreateOOBDevice(address)
 
 print "Created device %s with address: %s" % (device, address)
 
-print device
+#print device
 sys.exit(0)
 
 

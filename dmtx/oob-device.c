@@ -69,7 +69,7 @@ struct oob_data;
 
 void get_local_oobdata(struct oob_data *oob_data)
 {
-        int dev_id, dd, i;
+        int dev_id, dd;
         int timeout = 1000;
 
         dev_id = hci_get_route(&oob_data->bdaddr);
@@ -87,7 +87,7 @@ void get_local_oobdata(struct oob_data *oob_data)
 
 static void oob_unregister(void *data)
 {
-	struct oob_data *loob_data = data;
+	/* struct oob_data *loob_data = data; */
 
 	debug("Unregistered interface %s", DMTX_DEVICE_INTERFACE);
 	/* TODO */
@@ -105,6 +105,8 @@ static DBusMessage *create_oob_device(DBusConnection *conn,
 	struct btd_adapter *adapter = data;
 	struct btd_device *device;
 	const gchar *address;
+	DBusMessage *reply;
+	const gchar   *path;
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &address,
 						DBUS_TYPE_INVALID) == FALSE)
@@ -118,13 +120,23 @@ static DBusMessage *create_oob_device(DBusConnection *conn,
 				ERROR_INTERFACE ".AlreadyExists",
 				"Device already exists");
 
-	debug("create_device(%s)", address);
-
+        /* Device creation via adapter interface */
+        debug("DMTX create_device(%s)", address);
 	device = adapter_create_device(conn, adapter, address);
-	if (!device)
+        if (!device)
 		return NULL;
 
-	return NULL;
+	/* Return device path */
+	path = device_get_path(device);
+	debug("DMTX create_device path(%s)", path);
+
+	reply = dbus_message_new_method_return(msg);
+	if (!reply)
+		return NULL;
+
+	dbus_message_append_args(reply, DBUS_TYPE_OBJECT_PATH, &path,
+							DBUS_TYPE_INVALID);
+	return reply;
 }
 
 static GDBusMethodTable oob_methods[] = {
