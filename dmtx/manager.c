@@ -47,7 +47,6 @@ static DBusConnection *connection = NULL;
 
 static int dmtx_server_probe(struct btd_adapter *adapter)
 {
-
 	return server_start(adapter, connection);
 }
 
