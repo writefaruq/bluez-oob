@@ -35,8 +35,7 @@
 #include <gdbus.h>
 
 #include "logging.h"
-#include "../src/adapter.h"
-#include "../src/device.h"
+#include "adapter.h"
 
 #include "server.h"
 #include "manager.h"

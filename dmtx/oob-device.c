@@ -24,40 +24,24 @@
 #include <config.h>
 #endif
 
-#include <stdlib.h>
 #include <errno.h>
-#include <fcntl.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
-#include <bluetooth/hidp.h>
-#include <bluetooth/l2cap.h>
-#include <bluetooth/rfcomm.h>
 #include <bluetooth/sdp.h>
-#include <bluetooth/sdp_lib.h>
 
 #include <glib.h>
 #include <dbus/dbus.h>
 #include <gdbus.h>
 
-#include "logging.h"
-#include "textfile.h"
-#include "uinput.h"
-
-#include "../src/storage.h"
-#include "../src/manager.h"
-#include "../src/dbus-common.h"
 #include "adapter.h"
-#include "../src/device.h"
+#include "device.h"
 
 #include "error.h"
-#include "glib-helper.h"
-#include "btio.h"
+#include "logging.h"
 
 #include "oob-device.h"
 
@@ -69,20 +53,25 @@ struct oob_data;
 
 void get_local_oobdata(struct oob_data *oob_data)
 {
-        int dev_id, dd;
-        int timeout = 1000;
+	int dev_id, dd, err;
 
-        dev_id = hci_get_route(&oob_data->bdaddr);
-        dd = hci_open_dev(dev_id);
+	dev_id = hci_get_route(&oob_data->bdaddr);
+	dd = hci_open_dev(dev_id);
 	if (dd < 0) {
+		err = errno;
 		fprintf(stderr, "Can't open device hci%d: %s (%d)\n",
-						dev_id, strerror(errno), errno);
+				dev_id, strerror(err), err);
+		return;
 	}
 
-	if (hci_read_local_oob_data(dd, &oob_data->hash, &oob_data->randomizer, timeout) < 0) {
+	/* FIXME: build warning */
+	if (hci_read_local_oob_data(dd, &oob_data->hash,
+				&oob_data->randomizer, 1000) < 0) {
+		err = errno;
 		fprintf(stderr, "Can't read local OOB data on hci%d: %s (%d)\n",
-						dev_id, strerror(errno), errno);
+				dev_id, strerror(err), err);
 	}
+	close(dd);
 }
 
 static void oob_unregister(void *data)
@@ -100,16 +89,16 @@ static inline DBusMessage *invalid_args(DBusMessage *msg)
 }
 
 static DBusMessage *create_oob_device(DBusConnection *conn,
-					DBusMessage *msg, void *data)
+		DBusMessage *msg, void *data)
 {
 	struct btd_adapter *adapter = data;
 	struct btd_device *device;
 	const gchar *address;
 	DBusMessage *reply;
-	const gchar   *path;
+	const gchar *path;
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &address,
-						DBUS_TYPE_INVALID) == FALSE)
+				DBUS_TYPE_INVALID) == FALSE)
 		return invalid_args(msg);
 
 	if (check_address(address) < 0)
@@ -120,10 +109,10 @@ static DBusMessage *create_oob_device(DBusConnection *conn,
 				ERROR_INTERFACE ".AlreadyExists",
 				"Device already exists");
 
-        /* Device creation via adapter interface */
-        debug("DMTX create_device(%s)", address);
+	/* Device creation via adapter interface */
+	debug("DMTX create_device(%s)", address);
 	device = adapter_create_device(conn, adapter, address);
-        if (!device)
+	if (!device)
 		return NULL;
 
 	/* Return device path */
@@ -135,29 +124,28 @@ static DBusMessage *create_oob_device(DBusConnection *conn,
 		return NULL;
 
 	dbus_message_append_args(reply, DBUS_TYPE_OBJECT_PATH, &path,
-							DBUS_TYPE_INVALID);
+			DBUS_TYPE_INVALID);
 	return reply;
 }
 
 static GDBusMethodTable oob_methods[] = {
 	{ "CreateOOBDevice",		"s",	"o",	create_oob_device,
-						G_DBUS_METHOD_FLAG_ASYNC },
+		G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
-void register_oob_interface(DBusConnection *conn, struct btd_adapter *adapter, struct oob_data* oob_data)
+void register_oob_interface(DBusConnection *conn,
+		struct btd_adapter *adapter, struct oob_data *oob_data)
 {
-        const gchar *path;
-        path = adapter_get_path(adapter);
+	const gchar *path = adapter_get_path(adapter);
 
-        if (g_dbus_register_interface(conn, path, DMTX_DEVICE_INTERFACE,
-					oob_methods, NULL, NULL,
-					adapter, oob_unregister) == FALSE) {
+	if (g_dbus_register_interface(conn, path, DMTX_DEVICE_INTERFACE,
+				oob_methods, NULL, NULL,
+				adapter, oob_unregister) == FALSE) {
 		error("Failed to register interface %s on path %s",
-			DMTX_DEVICE_INTERFACE, path);
+				DMTX_DEVICE_INTERFACE, path);
 	}
 
 	debug("Registered interface %s on path %s",
 			DMTX_DEVICE_INTERFACE, path);
-
 }
