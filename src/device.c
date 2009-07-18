@@ -126,6 +126,9 @@ struct btd_device {
 	/* For Secure Simple Pairing */
 	uint8_t		cap;
 	uint8_t		auth;
+	gboolean	oob_data;
+	uint8_t		hash[16];
+	uint8_t		randomizer[16];
 
 	uint16_t	handle;			/* Connection handle */
 
@@ -1558,6 +1561,20 @@ void device_set_auth(struct btd_device *device, uint8_t auth)
 uint8_t device_get_auth(struct btd_device *device)
 {
 	return device->auth;
+}
+
+int device_read_oob_data(struct btd_device *device, uint8_t *hash, uint8_t *randomizer)
+{
+	if (!device)
+		return -ENODEV;
+
+	if (!device->oob_data)
+		return  -ENOENT;
+
+	memcpy(hash, device->hash, 16);
+	memcpy(randomizer, device->randomizer, 16);
+
+	return 0;
 }
 
 static gboolean start_discovery(gpointer user_data)

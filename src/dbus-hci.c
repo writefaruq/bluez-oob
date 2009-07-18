@@ -946,6 +946,18 @@ int hcid_dbus_set_io_cap(bdaddr_t *local, bdaddr_t *remote,
 	return 0;
 }
 
+int hcid_dbus_read_remote_oob_data(bdaddr_t *sba, bdaddr_t *dba,
+						uint8_t *hash, uint8_t *randomizer)
+{
+	struct btd_adapter *adapter;
+	struct btd_device *device;
+
+	if (!get_adapter_and_device(sba, dba, &adapter, &device, TRUE))
+		return -ENODEV;
+
+	return device_read_oob_data(device, hash, randomizer);
+}
+
 /* Most of the functions in this module require easy access to a connection so
  * we keep it global here and provide these access functions the other (few)
  * modules that require access to it */

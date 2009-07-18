@@ -445,9 +445,17 @@ static void user_passkey_notify(int dev, bdaddr_t *sba, void *ptr)
 	hcid_dbus_user_notify(sba, &req->bdaddr, btohl(req->passkey));
 }
 
-static void remote_oob_data_request(int dev, bdaddr_t *sba, void *ptr)
+static void remote_oob_data_request(int dev, bdaddr_t *sba, bdaddr_t *dba)
 {
-	hci_send_cmd(dev, OGF_LINK_CTL, OCF_REMOTE_OOB_DATA_NEG_REPLY, 6, ptr);
+	remote_oob_data_reply_cp cp;
+
+	if (hcid_dbus_read_remote_oob_data(sba, dba, cp.hash, cp.randomizer) < 0)
+		hci_send_cmd(dev, OGF_LINK_CTL, OCF_REMOTE_OOB_DATA_NEG_REPLY, 6, dba);
+	else {
+		bacpy(&cp.bdaddr, dba);
+		hci_send_cmd(dev, OGF_LINK_CTL,
+				OCF_REMOTE_OOB_DATA_REPLY, sizeof(cp), &cp);
+	}
 }
 
 static void io_capa_request(int dev, bdaddr_t *sba, bdaddr_t *dba)
@@ -1064,7 +1072,7 @@ static gboolean io_security_event(GIOChannel *chan, GIOCondition cond, gpointer 
 		break;
 
 	case EVT_REMOTE_OOB_DATA_REQUEST:
-		remote_oob_data_request(dev, &di->bdaddr, ptr);
+		remote_oob_data_request(dev, &di->bdaddr, (bdaddr_t *) ptr);
 		break;
 	}
 

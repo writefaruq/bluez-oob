@@ -37,6 +37,8 @@ int hcid_dbus_get_io_cap(bdaddr_t *local, bdaddr_t *remote,
 						uint8_t *cap, uint8_t *auth);
 int hcid_dbus_set_io_cap(bdaddr_t *local, bdaddr_t *remote,
 						uint8_t cap, uint8_t auth);
+int hcid_dbus_read_remote_oob_data(bdaddr_t *sba, bdaddr_t *dba,
+						uint8_t *hash, uint8_t *randomizer);
 int hcid_dbus_user_confirm(bdaddr_t *sba, bdaddr_t *dba, uint32_t passkey);
 int hcid_dbus_user_passkey(bdaddr_t *sba, bdaddr_t *dba);
 int hcid_dbus_user_notify(bdaddr_t *sba, bdaddr_t *dba, uint32_t passkey);
