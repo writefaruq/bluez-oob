@@ -34,7 +34,7 @@ void hcid_dbus_setscan_enable_complete(bdaddr_t *local);
 void hcid_dbus_write_class_complete(bdaddr_t *local);
 void hcid_dbus_write_simple_pairing_mode_complete(bdaddr_t *local);
 int hcid_dbus_get_io_cap(bdaddr_t *local, bdaddr_t *remote,
-						uint8_t *cap, uint8_t *auth);
+						uint8_t *cap, uint8_t *oob, uint8_t *auth);
 int hcid_dbus_set_io_cap(bdaddr_t *local, bdaddr_t *remote,
 						uint8_t cap, uint8_t auth);
 int hcid_dbus_read_remote_oob_data(bdaddr_t *sba, bdaddr_t *dba,

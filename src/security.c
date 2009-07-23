@@ -448,6 +448,11 @@ static void user_passkey_notify(int dev, bdaddr_t *sba, void *ptr)
 static void remote_oob_data_request(int dev, bdaddr_t *sba, bdaddr_t *dba)
 {
 	remote_oob_data_reply_cp cp;
+	char sa[18], da[18];
+
+	ba2str(sba, sa);
+	ba2str(dba, da);
+	info("remote_oob_data_request(sba=%s, dba=%s)", sa, da);
 
 	if (hcid_dbus_read_remote_oob_data(sba, dba, cp.hash, cp.randomizer) < 0)
 		hci_send_cmd(dev, OGF_LINK_CTL, OCF_REMOTE_OOB_DATA_NEG_REPLY, 6, dba);
@@ -461,12 +466,12 @@ static void remote_oob_data_request(int dev, bdaddr_t *sba, bdaddr_t *dba)
 static void io_capa_request(int dev, bdaddr_t *sba, bdaddr_t *dba)
 {
 	char sa[18], da[18];
-	uint8_t cap, auth;
+	uint8_t cap, auth, oob;
 
 	ba2str(sba, sa); ba2str(dba, da);
 	info("io_capa_request (sba=%s, dba=%s)", sa, da);
 
-	if (hcid_dbus_get_io_cap(sba, dba, &cap, &auth) < 0) {
+	if (hcid_dbus_get_io_cap(sba, dba, &cap, &oob, &auth) < 0) {
 		io_capability_neg_reply_cp cp;
 		memset(&cp, 0, sizeof(cp));
 		bacpy(&cp.bdaddr, dba);
@@ -478,7 +483,7 @@ static void io_capa_request(int dev, bdaddr_t *sba, bdaddr_t *dba)
 		memset(&cp, 0, sizeof(cp));
 		bacpy(&cp.bdaddr, dba);
 		cp.capability = cap;
-		cp.oob_data = 0x00;
+		cp.oob_data = oob;
 		cp.authentication = auth;
 		hci_send_cmd(dev, OGF_LINK_CTL, OCF_IO_CAPABILITY_REPLY,
 					IO_CAPABILITY_REPLY_CP_SIZE, &cp);

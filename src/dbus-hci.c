@@ -848,7 +848,7 @@ void hcid_dbus_write_simple_pairing_mode_complete(bdaddr_t *local)
 }
 
 int hcid_dbus_get_io_cap(bdaddr_t *local, bdaddr_t *remote,
-						uint8_t *cap, uint8_t *auth)
+						uint8_t *cap, uint8_t *oob, uint8_t *auth)
 {
 	struct btd_adapter *adapter;
 	struct btd_device *device;
@@ -926,6 +926,9 @@ int hcid_dbus_get_io_cap(bdaddr_t *local, bdaddr_t *remote,
 	*cap = agent_get_io_capability(agent);
 
 done:
+	if (oob)
+		*oob = (device_has_oob_data(device) ? 0x01 : 0x00);
+
 	debug("final authentication requirement is 0x%02x", *auth);
 
 	return 0;

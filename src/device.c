@@ -126,7 +126,7 @@ struct btd_device {
 	/* For Secure Simple Pairing */
 	uint8_t		cap;
 	uint8_t		auth;
-	gboolean	oob_data;
+	gboolean	oob;
 	uint8_t		hash[16];
 	uint8_t		randomizer[16];
 
@@ -1563,16 +1563,36 @@ uint8_t device_get_auth(struct btd_device *device)
 	return device->auth;
 }
 
+gboolean device_has_oob_data(struct btd_device *device)
+{
+	if (!device)
+		return FALSE;
+
+	return device->oob;
+}
+
 int device_read_oob_data(struct btd_device *device, uint8_t *hash, uint8_t *randomizer)
 {
 	if (!device)
 		return -ENODEV;
 
-	if (!device->oob_data)
+	if (!device->oob)
 		return  -ENOENT;
 
 	memcpy(hash, device->hash, 16);
 	memcpy(randomizer, device->randomizer, 16);
+
+	return 0;
+}
+
+int device_set_oob_data(struct btd_device *device, uint8_t *hash, uint8_t *randomizer)
+{
+	if (!device)
+		return -ENODEV;
+
+	device->oob = TRUE;
+	memcpy(device->hash, hash, 16);
+	memcpy(device->randomizer, randomizer, 16);
 
 	return 0;
 }

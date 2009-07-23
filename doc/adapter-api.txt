@@ -128,6 +128,12 @@ Methods		dict GetProperties()
 			Possible errors: org.bluez.Error.InvalidArguments
 					 org.bluez.Error.Failed
 
+		object CreatePairedOOBDevice(string address, object agent,
+							array{bytes} oob_tags)
+
+			Creates a new object path for a remote device based on OOB
+			data provided. FIXME:
+
 		void CancelDeviceCreation(string address)
 
 			Aborts either a CreateDevice call or a

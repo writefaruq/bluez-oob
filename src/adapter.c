@@ -1512,6 +1512,52 @@ static DBusMessage *create_paired_device(DBusConnection *conn,
 	return device_create_bonding(device, conn, msg, agent_path, cap);
 }
 
+/* FIXME: Move to a better place */
+#define EIR_TAG_TYPE_COD			0x0D
+#define EIR_TAG_TYPE_SP_HASH		0x0E
+#define EIR_TAG_TYPE_SP_RANDOMIZER	0x0F
+
+/* FIXME: Move to a better place */
+struct eir_tag {
+	uint8_t len;
+	uint8_t type;
+	uint8_t data[0];
+};
+
+static DBusMessage *create_paired_oob_device(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	struct btd_adapter *adapter = data;
+	struct btd_device *device;
+	const gchar *address, *agent_path;
+	uint8_t *oobtags;
+	int len;
+
+	/* See optional OOB tags format for more information */
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &address,
+					DBUS_TYPE_OBJECT_PATH, &agent_path,
+					DBUS_TYPE_ARRAY, DBUS_TYPE_BYTE, &oobtags, &len,
+						DBUS_TYPE_INVALID) == FALSE)
+		return invalid_args(msg);
+
+	if (check_address(address) < 0)
+		return invalid_args(msg);
+
+	/* TODO: parse oobtags */
+
+	device = adapter_get_device(conn, adapter, address);
+
+	if (!device)
+		return g_dbus_create_error(msg,
+				ERROR_INTERFACE ".Failed",
+				"Unable to create a new device object");
+
+	/* Set hash and randomizer in the btd_device */
+
+	return device_create_bonding(device, conn, msg,
+			agent_path, IO_CAPABILITY_NOINPUTNOOUTPUT);
+}
+
 static gint device_path_cmp(struct btd_device *device, const gchar *path)
 {
 	const gchar *dev_path = device_get_path(device);
@@ -1672,6 +1718,8 @@ static GDBusMethodTable adapter_methods[] = {
 	{ "CreateDevice",	"s",	"o",	create_device,
 						G_DBUS_METHOD_FLAG_ASYNC},
 	{ "CreatePairedDevice",	"sos",	"o",	create_paired_device,
+						G_DBUS_METHOD_FLAG_ASYNC},
+	{ "CreatePairedOOBDevice",	"soay",	"o",	create_paired_oob_device,
 						G_DBUS_METHOD_FLAG_ASYNC},
 	{ "CancelDeviceCreation","s",	"",	cancel_device_creation,
 						G_DBUS_METHOD_FLAG_ASYNC},
