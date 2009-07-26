@@ -49,6 +49,18 @@
 
 #define DMTX_DEVICE_INTERFACE "org.bluez.Dmtx"
 
+/* Copied from cthakasi/oob */
+#define EIR_TAG_TYPE_COD		0x0D
+#define EIR_TAG_TYPE_SP_HASH		0x0E
+#define EIR_TAG_TYPE_SP_RANDOMIZER	0x0F
+
+/* FIXME: Move to a better place */
+struct eir_tag {
+	uint8_t len;
+	uint8_t type;
+	uint8_t data[0];
+};
+
 struct oob_data;
 
 void get_local_oobdata(struct oob_data *oob_data)
@@ -128,9 +140,78 @@ static DBusMessage *create_oob_device(DBusConnection *conn,
 	return reply;
 }
 
+static void set_oobdata(struct btd_device *device, struct oob_data *oob_data)
+{
+        device->oob = TRUE;
+        memcpy(device->hash, oob_data->hash, 16);
+        memcpy(device->randomnizer, oob_data->randomizer, 16);
+}
+
+static void parse_oobtags(uint8_t *oobtags, int len, struct oob_data *roob_data)
+{
+        struct eir_tag* tag = oobtags;
+        while (len) {
+                switch (tag->type) {
+                        case EIR_TAG_TYPE_COD: /* not handled yet */
+                        break;
+                        case EIR_TAG_TYPE_SP_HASH:
+                        memcpy(roob_data->hash, tag->data, 16);
+                        break;
+                        case EIR_TAG_TYPE_SP_RANDOMIZER:
+                        memcpy(roob_data->randomnizer, tag->data, 16);
+                        break;
+                        default:
+                        debug("parse_oobtags: unknown oob tag type");
+                }
+                len = len - tag->len; /* FIXME: tag->len type conversion */
+                tag = tag + tag->len; /* points to next tag */
+        }
+}
+
+static DBusMessage *create_paired_oob_device(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	struct btd_adapter *adapter = data;
+	struct btd_device *device;
+	const gchar *address, *agent_path;
+	uint8_t *oobtags;
+	int len;
+	struct oob_data roob_data;
+
+	/* See optional OOB tags format for more information */
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &address,
+					DBUS_TYPE_OBJECT_PATH, &agent_path,
+					DBUS_TYPE_ARRAY, DBUS_TYPE_BYTE, &oobtags, &len,
+						DBUS_TYPE_INVALID) == FALSE)
+		return invalid_args(msg);
+
+	if (check_address(address) < 0)
+		return invalid_args(msg);
+
+	/* TODO: parse oobtags */
+	parse_oobtags(oobtags, len, &roob_data);
+
+	device = adapter_get_device(conn, adapter, address);
+
+	if (!device)
+		return g_dbus_create_error(msg,
+				ERROR_INTERFACE ".Failed",
+				"Unable to create a new device object");
+
+	/* Set hash and randomizer in the btd_device */
+        set_oobdata(device, &roob_data);
+
+	return device_create_bonding(device, conn, msg,
+			agent_path, IO_CAPABILITY_NOINPUTNOOUTPUT);
+}
+
+
 static GDBusMethodTable oob_methods[] = {
 	{ "CreateOOBDevice",		"s",	"o",	create_oob_device,
 		G_DBUS_METHOD_FLAG_ASYNC },
+	{ "CreatePairedOOBDevice",	"soay",	"o",	create_paired_oob_device,
+                G_DBUS_METHOD_FLAG_ASYNC},
+
 	{ }
 };
 
