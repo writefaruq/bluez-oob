@@ -163,7 +163,7 @@ static void parse_oobtags(uint8_t *oobtags, int len, struct oob_data *roob_data)
                         default:
                         debug("parse_oobtags: unknown oob tag type");
                 }
-                len = len - tag->len; /* FIXME: tag->len type conversion */
+                len = len - atoi(tag->len); /* FIXME: tag->len type conversion */
                 tag = tag + tag->len; /* points to next tag */
         }
 }
