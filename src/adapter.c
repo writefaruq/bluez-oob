@@ -71,6 +71,16 @@
 
 #define check_address(address) bachk(address)
 
+#define EIR_TAG_TYPE_COD			0x0D
+#define EIR_TAG_TYPE_SP_HASH		0x0E
+#define EIR_TAG_TYPE_SP_RANDOMIZER	0x0F
+
+struct eir_tag {
+	uint8_t len;
+	uint8_t type;
+	uint8_t data[0];
+};
+
 static DBusConnection *connection = NULL;
 static GSList *adapter_drivers = NULL;
 
@@ -976,7 +986,7 @@ static void adapter_update_devices(struct btd_adapter *adapter)
 
 struct btd_device *adapter_create_device(DBusConnection *conn,
 						struct btd_adapter *adapter,
-						const char *address)
+						const char *address, gboolean temporary)
 {
 	struct btd_device *device;
 	const char *path;
@@ -987,7 +997,7 @@ struct btd_device *adapter_create_device(DBusConnection *conn,
 	if (!device)
 		return NULL;
 
-	device_set_temporary(device, TRUE);
+	device_set_temporary(device, temporary);
 
 	adapter->devices = g_slist_append(adapter->devices, device);
 
@@ -1050,7 +1060,7 @@ struct btd_device *adapter_get_device(DBusConnection *conn,
 	if (device)
 		return device;
 
-	return adapter_create_device(conn, adapter, address);
+	return adapter_create_device(conn, adapter, address, TRUE);
 }
 
 static int adapter_start_inquiry(struct btd_adapter *adapter)
@@ -1451,7 +1461,7 @@ static DBusMessage *create_device(DBusConnection *conn,
 
 	debug("create_device(%s)", address);
 
-	device = adapter_create_device(conn, adapter, address);
+	device = adapter_create_device(conn, adapter, address, TRUE);
 	if (!device)
 		return NULL;
 
@@ -1512,30 +1522,19 @@ static DBusMessage *create_paired_device(DBusConnection *conn,
 	return device_create_bonding(device, conn, msg, agent_path, cap);
 }
 
-/* FIXME: Move to a better place */
-#define EIR_TAG_TYPE_COD			0x0D
-#define EIR_TAG_TYPE_SP_HASH		0x0E
-#define EIR_TAG_TYPE_SP_RANDOMIZER	0x0F
-
-/* FIXME: Move to a better place */
-struct eir_tag {
-	uint8_t len;
-	uint8_t type;
-	uint8_t data[0];
-};
-
 static DBusMessage *create_paired_oob_device(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
 	struct btd_adapter *adapter = data;
 	struct btd_device *device;
-	const gchar *address, *agent_path;
-	uint8_t *oobtags;
-	int len;
+	struct eir_tag *tag;
+	const gchar *address, *rule, *agent_path = "/";
+	uint8_t hash[16], randomizer[18], *oobtags;
+	int i, len;
 
 	/* See optional OOB tags format for more information */
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &address,
-					DBUS_TYPE_OBJECT_PATH, &agent_path,
+					DBUS_TYPE_STRING, &rule,
 					DBUS_TYPE_ARRAY, DBUS_TYPE_BYTE, &oobtags, &len,
 						DBUS_TYPE_INVALID) == FALSE)
 		return invalid_args(msg);
@@ -1543,19 +1542,50 @@ static DBusMessage *create_paired_oob_device(DBusConnection *conn,
 	if (check_address(address) < 0)
 		return invalid_args(msg);
 
-	/* TODO: parse oobtags */
-
-	device = adapter_get_device(conn, adapter, address);
+	device = adapter_find_device(adapter, address);
+	if (!device)
+		device = adapter_create_device(conn, adapter, address, FALSE);
 
 	if (!device)
 		return g_dbus_create_error(msg,
 				ERROR_INTERFACE ".Failed",
 				"Unable to create a new device object");
 
-	/* Set hash and randomizer in the btd_device */
+	memset(hash, 0, sizeof(hash));
+	memset(randomizer, 0, sizeof(randomizer));
+	for (i = 0; i < len; i += tag->len + 1) {
+		tag = (struct eir_tag *) (oobtags + i);
+		switch (tag->type) {
+		case EIR_TAG_TYPE_SP_HASH:
+			if (tag->len != 17)
+				goto invalid_args;
 
-	return device_create_bonding(device, conn, msg,
-			agent_path, IO_CAPABILITY_NOINPUTNOOUTPUT);
+			memcpy(hash, tag->data, 16);
+			break;
+		case EIR_TAG_TYPE_SP_RANDOMIZER:
+			if (tag->len != 17)
+				goto invalid_args;
+
+			memcpy(randomizer, tag->data, 16);
+			break;
+		default:
+			info("OOB ignoring EIR tag: 0x%X", tag->type);
+			break;
+		}
+	}
+
+	if (strcasecmp("initiator", rule) == 0) {
+		device_set_oob_data(device, hash, randomizer);
+		return device_create_bonding(device, conn, msg,
+				agent_path, IO_CAPABILITY_NOINPUTNOOUTPUT);
+	} else if (strcasecmp("responder", rule) == 0) {
+		device_set_oob_data(device, hash, randomizer);
+		/* FIXME: Reply when OOB pairing finishes */
+		return dbus_message_new_method_return(msg);
+	}
+
+invalid_args:
+	return invalid_args(msg);
 }
 
 static gint device_path_cmp(struct btd_device *device, const gchar *path)
@@ -1719,7 +1749,7 @@ static GDBusMethodTable adapter_methods[] = {
 						G_DBUS_METHOD_FLAG_ASYNC},
 	{ "CreatePairedDevice",	"sos",	"o",	create_paired_device,
 						G_DBUS_METHOD_FLAG_ASYNC},
-	{ "CreatePairedOOBDevice",	"soay",	"o",	create_paired_oob_device,
+	{ "CreatePairedOOBDevice",	"ssay",	"o",	create_paired_oob_device,
 						G_DBUS_METHOD_FLAG_ASYNC},
 	{ "CancelDeviceCreation","s",	"",	cancel_device_creation,
 						G_DBUS_METHOD_FLAG_ASYNC},

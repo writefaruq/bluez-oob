@@ -93,7 +93,8 @@ struct btd_device *adapter_find_connection(struct btd_adapter *adapter, uint16_t
 void adapter_remove_device(DBusConnection *conn, struct btd_adapter *adapter,
 				struct btd_device *device);
 struct btd_device *adapter_create_device(DBusConnection *conn,
-				struct btd_adapter *adapter, const char *address);
+						struct btd_adapter *adapter, const char *address,
+						gboolean temporary);
 
 int pending_remote_name_cancel(struct btd_adapter *adapter);
 
