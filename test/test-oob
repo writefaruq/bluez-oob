@@ -18,8 +18,8 @@ def create_device_error(error):
 
 if __name__ == '__main__':
 
-	if len(sys.argv) < 4:
-		print "test-oob <remote bdaddr> hash randomizer"
+	if len(sys.argv) < 5:
+		print "test-oob <initiator|responder> <remote bdaddr> <hash> <randomizer>"
 		exit()
 
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -30,14 +30,15 @@ if __name__ == '__main__':
 
 	path = manager.DefaultAdapter()
 	print "Using adapter:" + path
-	print "Device:" + sys.argv[1]
-	print "Hash:" + sys.argv[2]
-	print "Randomizer:" + sys.argv[3]
+	print "Local role:" + sys.argv[1]
+	print "Device:" + sys.argv[2]
+	print "Hash:" + sys.argv[3]
+	print "Randomizer:" + sys.argv[4]
 
 	oob = dbus.Array([0x11, 0x0E], "ay")
-	hash = [ int("%s" % i, 16) for i in sys.argv[2].split() ]
+	hash = [ int("%s" % i, 16) for i in sys.argv[3].split() ]
 	hash = dbus.Array(hash, "ay")
-	randomizer = [ int("%s" % i, 16) for i in sys.argv[3].split() ]
+	randomizer = [ int("%s" % i, 16) for i in sys.argv[4].split() ]
 	randomizer= dbus.Array(randomizer, "ay")
 
 	oob += hash + [0x11, 0x0f] + randomizer
@@ -47,7 +48,7 @@ if __name__ == '__main__':
 
 	mainloop = gobject.MainLoop()
 
-	print adapter.CreatePairedOOBDevice(sys.argv[1], "initiator", oob,
+	print adapter.CreatePairedOOBDevice(sys.argv[2], sys.argv[1], oob,
 				reply_handler=create_device_reply,
 				error_handler=create_device_error)
 	mainloop.run()
